@@ -13,7 +13,7 @@
 // =====================================================================
 
 /* [Vista] */
-part        = "all";   // all | front | rear | side_l | side_r | top | base | tray | rad_frame | flex_cradle | gpu_bar | riser_plate | profile
+part        = "all";   // all | front | rear | side_l | side_r | top | base | tray | rad_bars | flex_cradle | gpu_rails | profile
 explode     = 0;       // [0:5:80]
 show_panels = true;
 show_parts  = true;    // placa, GPU, radiador, Flex... (solo referencia)
@@ -21,7 +21,7 @@ flat        = false;   // true + part=<panel> -> pieza plana para exportar DXF
 
 /* [Caja] */
 W  = 150;      // ancho exterior
-D  = 190;      // fondo exterior
+D  = 205;      // fondo exterior (deja ~34 mm delante del radiador para los codos de los tubos)
 H  = 320;      // alto total con patas
 FEET = 15;     // alto de las patas
 T  = 2;        // espesor de panel (aluminio 5052)
@@ -50,14 +50,15 @@ PCB_X    = 82;          // cara de componentes de la placa
 PCB_T    = 1.6;
 STANDOFF = 6.4;
 TRAY_X   = PCB_X + PCB_T + STANDOFF;   // 90
-FAN_X    = TRAY_X + T + 14;            // 106 (cámara de 14 mm)
-RAD_X    = FAN_X + fan_slim;           // 121
-BOARD_Y0 = 15;  BOARD_Z0 = 85;         // esquina de la placa (170 x 170)
+FAN_X    = TRAY_X + T + 12;            // 104 (cámara de 12 mm)
+RAD_X    = FAN_X + fan_slim;           // 119; pletinas de 2 mm entre radiador y panel
+BOARD_Y0 = D - T - 3 - 170;  BOARD_Z0 = 85;   // placa 170 x 170, borde I/O a 3 mm de la trasera
 GPU_Z0   = 265;                        // cara inferior de la GPU
 GPU_X0   = 15;
-RAD_Y0   = (D - rad_len) / 2;          // 16.5
+RAD_Y0   = D - T - PROF - rad_len;      // 36: radiador contra el perfil trasero; tubos por delante
+RAD_CY   = RAD_Y0 + rad_len / 2;       // centro del radiador (y del ventilador)
 RAD_Z0   = 138;                        // radiador 138..258 (por encima de la bomba)
-FLEX_Y0  = 28;  FLEX_Z0 = 45;          // Flex 150 x 81.5 x 40.5 (sobre la cuna, por encima del ventilador de base)
+FLEX_Y0  = D - T - 10 - 150;  FLEX_Z0 = 45;          // Flex 150 x 81.5 x 40.5 (sobre la cuna, por encima del ventilador de base)
 FLEX_X0  = W - T - 40.5;               // 107.5
 BFAN     = 140;                        // ventilador de base 140 x 25
 TRAY_Z0  = Z0 + T + 25 + 2;            // la bandeja empieza encima del ventilador de base
@@ -132,7 +133,7 @@ module side_r_2d() {
     difference() {
         translate([T, T]) square([D - 2 * T, PANEL_H - 2 * T]);
         slot_band_2d(D - 20, 10, GPU_Z0 - Z0 + 4, 38);
-        translate([D / 2, RAD_Z0 + 60 - Z0]) perforated_circle_2d(57, 3.4, 6);
+        translate([RAD_CY, RAD_Z0 + 60 - Z0]) perforated_circle_2d(57, 3.4, 6);
     }
 }
 // Tapa (plano XY)
@@ -192,19 +193,19 @@ module tray() {
         // ventana backplate CPU (centrada en la placa, ajustar al socket)
         translate([TRAY_X - eps, BOARD_Y0 + 45, BOARD_Z0 + 45]) cube([T + 2 * eps, 80, 80]);
         // ventana de tubos bajo la placa
-        translate([TRAY_X - eps, 20, TRAY_Z0 + 4]) cube([T + 2 * eps, 60, BOARD_Z0 - TRAY_Z0 - 6]);
+        translate([TRAY_X - eps, T + PROF + 2, TRAY_Z0 + 4]) cube([T + 2 * eps, 60, BOARD_Z0 - TRAY_Z0 - 6]); // paso de tubos por delante
     }
     // standoffs M3
     color("#C9A227") for (h = ITX_HOLES)
         translate([PCB_X + PCB_T, BOARD_Y0 + h[0], BOARD_Z0 + h[1]]) rotate([0, 90, 0]) cylinder(d = 5.5, h = STANDOFF, $fn = 6);
 }
-// Marco del radiador: chapa con hueco de 120 entre cámara y ventilador
-module rad_frame() {
-    color("#5B626B") difference() {
-        translate([FAN_X - T, T + PROF, RAD_Z0 - 4]) cube([T, D - 2 * (T + PROF), 122]);
-        translate([FAN_X - T - eps, D / 2, RAD_Z0 + 60]) rotate([0, 90, 0]) cylinder(d = 114, h = T + 2 * eps);
-        for (sy = [-1, 1], sz = [-1, 1])
-            translate([FAN_X - T - eps, D / 2 + sy * 52.5, RAD_Z0 + 60 + sz * 52.5]) rotate([0, 90, 0]) cylinder(d = 4.4, h = T + 2 * eps);
+// Pletinas del radiador: dos tiras de 15 x 2 mm por la cara exterior del radiador,
+// atornilladas a sus agujeros de 105 mm y a los perfiles delantero y trasero.
+// El ventilador va atornillado al radiador por dentro (sin marco).
+module rad_bars() {
+    color("#5B626B") for (sz = [-1, 1]) difference() {
+        translate([RAD_X + rad_thk, T + PROF, RAD_Z0 + 60 + sz * 52.5 - 7.5]) cube([T, D - 2 * (T + PROF), 15]);
+        for (sy = [-1, 1]) translate([RAD_X + rad_thk - eps, RAD_CY + sy * 52.5, RAD_Z0 + 60 + sz * 52.5]) rotate([0, 90, 0]) cylinder(d = 4.4, h = T + 2 * eps);
     }
 }
 // Cuna de la Flex + collarín hasta la trasera
@@ -217,16 +218,16 @@ module flex_cradle() {
         }
     }
 }
-// Travesaño de la GPU (perfil en L, ajustable 150–180)
-module gpu_bar() {
-    color("#8A9099") translate([GPU_X0, D - T - gpu_len - 2, GPU_Z0 - 6]) {
-        cube([gpu_h, 12, 2]);
-        cube([gpu_h, 2, 6]);
+// Raíles de la GPU: dos perfiles en L bajo los cantos largos de la tarjeta,
+// de perfil delantero a trasero, con tira de goma. El del lado del PCIe
+// lleva la pinza del zócalo del riser. El centro queda libre para que
+// respiren los ventiladores de la gráfica.
+module gpu_rails() {
+    color("#8A9099") for (x = [GPU_X0, GPU_X0 + gpu_h - 8]) translate([x, T + PROF, GPU_Z0 - 6]) {
+        cube([8, D - 2 * (T + PROF), 2]);
+        translate([x < W / 2 ? 0 : 6, 0, 0]) cube([2, D - 2 * (T + PROF), 6]);
     }
-}
-// Soporte del zócalo del riser
-module riser_plate() {
-    color("#8A9099") translate([GPU_X0 + 10, D - T - 140, GPU_Z0 - 8]) cube([60, 100, 2]);
+    color("#8A9099") translate([GPU_X0 + 8, D - T - 125, GPU_Z0 - 6]) cube([20, 90, 2]); // pinza del riser
 }
 
 // ---------------------------------------------------------------------
@@ -242,7 +243,9 @@ module ref_parts() {
     color("#555", 0.4) translate([GPU_X0, D - T - 180, GPU_Z0]) cube([gpu_h, 180, gpu_thk]); // contorno 180
     // radiador + ventilador
     color("#24406E") translate([RAD_X, RAD_Y0, RAD_Z0]) cube([rad_thk, rad_len, 120]);
-    color("#3D5A8A") translate([FAN_X, D / 2 - 60, RAD_Z0]) cube([fan_slim, 120, 120]);
+    color("#3D5A8A") translate([FAN_X, RAD_CY - 60, RAD_Z0]) cube([fan_slim, 120, 120]);
+    // tubos del AIO: salen por delante del radiador y bajan hasta la ventana de la bandeja
+    color("#111") for (dz = [20, 45]) translate([RAD_X + 10, T + PROF + 2, RAD_Z0 + dz - 10]) cube([12, RAD_Y0 - T - PROF - 2, 12]);
     // Flex
     color("#44484E") translate([FLEX_X0, FLEX_Y0, FLEX_Z0]) cube([40.5, 150, 81.5]);
     // ventilador de base 140 x 25
@@ -260,10 +263,9 @@ module panels() {
 module assembly() {
     skeleton();
     tray();
-    rad_frame();
+    rad_bars();
     flex_cradle();
-    gpu_bar();
-    riser_plate();
+    gpu_rails();
     if (show_parts) ref_parts();
     if (show_panels) panels();
 }
@@ -287,9 +289,8 @@ else {
     if (part == "top")         top();
     if (part == "base")        base();
     if (part == "tray")        tray();
-    if (part == "rad_frame")   rad_frame();
+    if (part == "rad_bars")    rad_bars();
     if (part == "flex_cradle") flex_cradle();
-    if (part == "gpu_bar")     gpu_bar();
-    if (part == "riser_plate") riser_plate();
+    if (part == "gpu_rails")   gpu_rails();
     if (part == "profile")     profile();
 }

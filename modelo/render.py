@@ -22,7 +22,8 @@ DESK, WALL, CASE, RUBBER, MON, SCREEN, KEYB, MUG, BOOK1, BOOK2, STAND, PAD = ran
 
 box([-2600, -40, -520], [2600, 0, 900], DESK)
 box([-4000, -400, -560], [4000, 3000, -520], WALL)
-CX0, CX1, CZ0, CZ1, CY0, CY1 = 250, 400, -95, 95, 15, 320
+CX0, CX1, CZ0, CZ1, CY0, CY1 = 250, 400, -102.5, 102.5, 15, 320
+DEPTH = CZ1 - CZ0; RAD_U = 2 + 34 + 157 / 2   # centro del radiador medido desde el frontal
 box([CX0, CY0, CZ0], [CX1, CY1, CZ1], CASE)
 for x, z in [(CX0 + 4, CZ0 + 4), (CX1 - 22, CZ0 + 4), (CX0 + 4, CZ1 - 22), (CX1 - 22, CZ1 - 22)]:
     box([x, 0, z], [x + 18, 15, z + 18], RUBBER)
@@ -143,16 +144,16 @@ def shade(o, d, t, i, kind):
         u = px - CX0
         dark |= front & slots(u, vtop, 10, 140, 12, 50)
         us = CZ1 - pz
-        dark |= side & slots(us, vtop, 10, 180, 12, 50)
-        r2 = (us - 95) ** 2 + (vtop - 122) ** 2
+        dark |= side & slots(us, vtop, 10, DEPTH - 10, 12, 50)
+        r2 = (us - RAD_U) ** 2 + (vtop - 122) ** 2
         dark |= side & (r2 < 57 ** 2) & hexholes(us, vtop, 6, 1.7)
         ring = side & (np.abs(np.sqrt(r2) - 57) < 1.0)
         c[ring] *= 1.8
         ut, wt = px - CX0, CZ1 - pz
-        intop = top & (ut > 10) & (ut < 140) & (wt > 10) & (wt < 180)
+        intop = top & (ut > 10) & (ut < 140) & (wt > 10) & (wt < DEPTH - 10)
         dark |= intop & hexholes(ut, wt, 6, 1.7)
         # juntas entre paneles (0,6 mm)
-        seam = (side & ((us < 2.3) & (us > 1.7) | (us > 187.7) & (us < 188.3) | (vtop < 2.3) & (vtop > 1.7)))
+        seam = (side & ((us < 2.3) & (us > 1.7) | (us > DEPTH - 2.3) & (us < DEPTH - 1.7) | (vtop < 2.3) & (vtop > 1.7)))
         seam |= front & ((vtop < 2.3) & (vtop > 1.7))
         c[dark] = [0.006, 0.006, 0.007]; sp[dark] = 0.0
         c[seam] = [0.01, 0.01, 0.012]

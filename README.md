@@ -1,6 +1,6 @@
 # Caja Mini-ITX tipo consola
 
-Presentación del diseño de una caja Mini-ITX de aluminio negro anodizado, de 150 × 190 × 320 mm (≈ 9,1 L).
+Presentación del diseño de una caja Mini-ITX de aluminio negro anodizado, de 150 × 205 × 320 mm (≈ 9,8 L).
 
 Se ve en GitHub Pages: <https://narfware.github.io/itx-prototype/>
 
