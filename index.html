@@ -19,6 +19,7 @@ html,body{margin:0;height:100%;background:#08090A;overflow:hidden;-webkit-text-s
 #ui button:focus-visible{outline:2px solid #7BA3FF;outline-offset:2px}
 #hint{display:none;position:fixed;top:12px;left:0;right:0;text-align:center;font:400 13px Inter,sans-serif;color:#A0A4AA}
 @media (orientation:portrait) and (max-width:700px){#hint{display:block}}
+#ui a{pointer-events:auto;color:#7BA3FF;text-decoration:none;margin-left:8px}
 #count{min-width:64px;text-align:center;font-family:'JetBrains Mono',monospace}
 @media print{html,body{overflow:visible;height:auto}#deck{position:static;display:block}#ui{display:none}.stage{display:block;position:relative;left:0;top:0;transform:none!important;page-break-after:always}}
 section{background:#0F1012;color:#EDEDE8;font-family:Inter,sans-serif;padding:128px;box-sizing:border-box}
@@ -376,10 +377,10 @@ td.v{color:#C9CCD1}
 <h2>Piezas internas</h2>
 <table>
 <tr><th>Pieza</th><th>Material</th><th>Qué hace</th></tr>
-<tr><td class="k">Esqueleto</td><td class="v">Perfiles de 15 × 15 y marcos</td><td class="v">Estructura; todo lo demás se atornilla aquí.</td></tr>
+<tr><td class="k">Esqueleto</td><td class="v">Perfiles de 10 × 10 y marcos</td><td class="v">Estructura; todo lo demás se atornilla aquí.</td></tr>
 <tr><td class="k">Bandeja central</td><td class="v">Aluminio de 2 mm</td><td class="v">Placa sobre standoffs M3; ventanas para el backplate, el M.2 trasero y los tubos.</td></tr>
 <tr><td class="k">Soporte del radiador</td><td class="v">Escuadra de aluminio</td><td class="v">Radiador y ventilador, independientes del panel lateral.</td></tr>
-<tr><td class="k">Cuna de la Flex</td><td class="v">Aluminio</td><td class="v">Sujeta la fuente al marco inferior y al panel trasero.</td></tr>
+<tr><td class="k">Cuna de la Flex</td><td class="v">Aluminio</td><td class="v">Sujeta la fuente 10 mm por delante de la trasera; un collarín lleva el aire al recorte.</td></tr>
 <tr><td class="k">Pestaña del bracket</td><td class="v">Panel trasero</td><td class="v">Dos ranuras de 20,32 mm con rosca 6-32.</td></tr>
 <tr><td class="k">Soporte del riser</td><td class="v">Aluminio</td><td class="v">Fija el zócalo PCIe y la posición de la GPU.</td></tr>
 <tr><td class="k">Travesaño de la GPU</td><td class="v">Perfil en L con goma</td><td class="v">Apoya el extremo delantero, ajustable de 150 a 180 mm.</td></tr>
@@ -401,7 +402,7 @@ td.v{color:#C9CCD1}
 <div class="stage" data-i="9"><section id="construccion">
 <h2>Aluminio negro, atornillado</h2>
 <div class="row" style="gap:32px">
-<div class="card in" style="flex:1"><h3>Esqueleto</h3><p class="body">4 perfiles de aluminio de 15 × 15 en las esquinas, con marcos arriba y abajo.</p></div>
+<div class="card in" style="flex:1"><h3>Esqueleto</h3><p class="body">4 perfiles de aluminio de 10 × 10 en las esquinas, con marcos arriba y abajo. El trasero derecho se corta sobre la Flex.</p></div>
 <div class="card in d1" style="flex:1"><h3>Paneles</h3><p class="body">Aluminio 5052 de 2 mm, anodizado negro mate. Laterales, frontal y tapa con imanes y pines de centrado.</p></div>
 <div class="card in d2" style="flex:1"><h3>Interior</h3><p class="body">Bandeja con standoffs, dos apoyos para la GPU, soporte del riser, cuna de la Flex y marco del radiador.</p></div>
 <div class="card in d3" style="flex:1"><h3>Impreso</h3><p class="body">Marco del filtro magnético y pasacables en PETG o ASA negro. Patas de goma en la base.</p></div>
@@ -423,6 +424,7 @@ td.v{color:#C9CCD1}
 <nav id="ui" aria-label="Navegación de diapositivas">
 <button id="prev" aria-label="Diapositiva anterior">‹</button>
 <span id="count"></span>
+<a id="m3d" href="modelo.html">Modelo 3D</a>
 <button id="next" aria-label="Diapositiva siguiente">›</button>
 </nav>
 <script>

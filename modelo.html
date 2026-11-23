@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caja Mini-ITX tipo consola · modelo 3D</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+html,body{margin:0;height:100%;background:#0F1012;color:#EDEDE8;font-family:Inter,sans-serif;overflow:hidden}
+#c{position:fixed;inset:0}
+header{position:fixed;left:24px;top:20px;right:24px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;pointer-events:none}
+h1{margin:0;font-family:'Space Grotesk',sans-serif;font-size:22px}
+header p{margin:4px 0 0;color:#A0A4AA;font-size:14px}
+header a{pointer-events:auto;color:#7BA3FF;font-size:14px;text-decoration:none;white-space:nowrap}
+header a:hover{text-decoration:underline}
+#panel{position:fixed;left:24px;bottom:24px;background:#16181BEE;border:1px solid #2C3036;border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;font-size:14px;max-width:300px}
+#panel label{display:flex;align-items:center;gap:10px;cursor:pointer;min-height:28px}
+#panel input[type=checkbox]{width:18px;height:18px;accent-color:#7BA3FF}
+#panel input[type=range]{width:100%;accent-color:#7BA3FF}
+#panel .row{display:flex;justify-content:space-between;color:#A0A4AA}
+#panel .views{display:flex;gap:8px;flex-wrap:wrap}
+#panel button{background:#1C1F23;color:#EDEDE8;border:1px solid #2C3036;border-radius:8px;padding:8px 12px;font:inherit;cursor:pointer;min-height:36px}
+#panel button:hover{border-color:#5B626B}
+#panel button:focus-visible,#panel input:focus-visible{outline:2px solid #7BA3FF;outline-offset:2px}
+#tip{position:fixed;pointer-events:none;background:#1C1F23;border:1px solid #2C3036;border-radius:8px;padding:6px 10px;font-size:13px;display:none;white-space:nowrap}
+#tip b{font-weight:600}#tip span{color:#A0A4AA;font-family:'JetBrains Mono',monospace;font-size:12px}
+#err{position:fixed;inset:0;display:none;align-items:center;justify-content:center;color:#A0A4AA;text-align:center;padding:24px}
+@media (max-width:640px){#panel{left:12px;right:12px;bottom:12px;max-width:none}header{left:12px;right:12px}}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="Modelo 3D interactivo de la caja"></canvas>
+<header>
+<div><h1>Modelo 3D</h1><p>Arrastra para girar · rueda o pellizco para acercar</p></div>
+<a href="./">← Presentación</a>
+</header>
+<div id="panel">
+<label><input type="checkbox" id="pan" checked> Paneles exteriores</label>
+<label><input type="checkbox" id="ghost"> Paneles translúcidos</label>
+<label><input type="checkbox" id="comp" checked> Componentes</label>
+<label><input type="checkbox" id="g180"> Contorno GPU de 180 mm</label>
+<div><div class="row"><span>Despiece</span><span id="ev">0 mm</span></div><input type="range" id="ex" min="0" max="120" value="0" aria-label="Separación de paneles"></div>
+<div class="views"><button data-v="iso">3/4</button><button data-v="front">Frontal</button><button data-v="side">Lateral</button><button data-v="rear">Trasera</button><button data-v="top">Planta</button></div>
+</div>
+<div id="tip"></div>
+<div id="err">No se ha podido cargar el visor 3D. Comprueba la conexión y recarga la página.</div>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setClearColor(0x0F1012);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, 1, 1, 5000);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.target.set(0, 160, 0);
+
+scene.add(new THREE.HemisphereLight(0xdfe6f0, 0x1a1410, 1.1));
+const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(300, 500, 400); scene.add(key);
+const rim = new THREE.DirectionalLight(0x7ba3ff, 0.5); rim.position.set(-400, 200, -300); scene.add(rim);
+const floor = new THREE.Mesh(new THREE.CircleGeometry(420, 64), new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: 1 }));
+floor.rotation.x = -Math.PI / 2; scene.add(floor);
+
+const data = await fetch('modelo/piezas.json').then(r => r.json()).catch(() => null);
+if (!data) { document.getElementById('err').style.display = 'flex'; throw new Error('no data'); }
+const [W, D] = data.dims;
+const meshes = [];
+const dirs = { 'Frontal': [0, 0, 1], 'Trasera': [0, 0, -1], 'Lateral componentes': [-1, 0, 0], 'Lateral radiador': [1, 0, 0], 'Tapa': [0, 1, 0], 'Base': [0, -1, 0] };
+for (const p of data.parts) {
+  const [x, y, z] = p.p, [dx, dy, dz] = p.s;
+  const geo = new THREE.BoxGeometry(dx, dz, dy);
+  const isContour = p.group === 'contorno';
+  const mat = new THREE.MeshStandardMaterial({ color: p.color, roughness: p.group === 'panel' ? 0.55 : 0.7, metalness: p.group === 'panel' || p.group === 'esqueleto' || p.group === 'interno' ? 0.35 : 0.05, transparent: isContour, opacity: isContour ? 0.18 : 1 });
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(x + dx / 2 - W / 2, z + dz / 2, D / 2 - (y + dy / 2));
+  m.userData = { ...p, base: m.position.clone() };
+  if (!isContour) { const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0x4a5058, transparent: true, opacity: 0.6 })); m.add(e); }
+  scene.add(m); meshes.push(m);
+}
+
+const $ = id => document.getElementById(id);
+function apply() {
+  const ex = +$('ex').value; $('ev').textContent = ex + ' mm';
+  for (const m of meshes) {
+    const g = m.userData.group;
+    if (g === 'panel') {
+      m.visible = $('pan').checked;
+      m.material.transparent = $('ghost').checked; m.material.opacity = $('ghost').checked ? 0.22 : 1; m.material.depthWrite = !$('ghost').checked;
+      const d = dirs[m.userData.name] || [0, 0, 0];
+      m.position.set(m.userData.base.x + d[0] * ex, m.userData.base.y + d[1] * ex, m.userData.base.z + d[2] * ex);
+    }
+    if (g === 'componente') m.visible = $('comp').checked;
+    if (g === 'contorno') m.visible = $('g180').checked;
+  }
+}
+['pan', 'ghost', 'comp', 'g180', 'ex'].forEach(id => $(id).addEventListener('input', apply));
+apply();
+
+const views = { iso: [420, 420, 520], front: [0, 170, 820], side: [820, 170, 0], rear: [0, 170, -820], top: [0.01, 900, 0.01] };
+function view(v) { camera.position.set(...views[v]); controls.target.set(0, 160, 0); controls.update(); }
+document.querySelectorAll('[data-v]').forEach(b => b.addEventListener('click', () => view(b.dataset.v)));
+view('iso');
+
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(), tip = $('tip');
+canvas.addEventListener('pointermove', e => {
+  mouse.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(mouse, camera);
+  const hit = ray.intersectObjects(meshes.filter(m => m.visible && !(m.material.transparent && m.material.opacity < 0.5)), false)[0];
+  if (hit) { const u = hit.object.userData; tip.innerHTML = `<b>${u.name}</b> <span>${u.s.map(v => +v.toFixed(1)).join(' × ')} mm</span>`; tip.style.left = e.clientX + 14 + 'px'; tip.style.top = e.clientY + 14 + 'px'; tip.style.display = 'block'; }
+  else tip.style.display = 'none';
+});
+canvas.addEventListener('pointerleave', () => tip.style.display = 'none');
+
+function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+</script>
+</body>
+</html>
